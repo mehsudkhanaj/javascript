@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Time Tracking</title>
+</head>
+
+<body>
+    <h1>Time Tracking for Task A</h1>
+    <button onclick="startTask()">Start</button>
+    <button onclick="pauseTask()">Pause</button>
+    <button onclick="completeTask()">Completed Task</button>
+
+    <div id="runningTime"></div>
+    <div id="pausedTime"></div>
+    <div id="totalCalculation"></div>
+
+    <h2>Time Logs</h2>
+    <table id="timeLogsTable" cellpadding='15px' border="2px solid purple">
+        <thead>
+            <tr>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <script>
+        let taskStartTime;
+        let taskPausedTime;
+        let isTaskPaused = false;
+        let runningTimeInterval;
+
+        const timeLogs = JSON.parse(localStorage.getItem('timeLogs')) || [];
+
+        // Populate the time logs table with stored time logs
+        const timeLogsTable = document.getElementById('timeLogsTable');
+        timeLogs.forEach(log => {
+            const row = timeLogsTable.insertRow();
+            const startCell = row.insertCell();
+            const endCell = row.insertCell();
+            const durationCell = row.insertCell();
+            startCell.textContent = formatTime(log.start);
+            endCell.textContent = formatTime(log.end);
+            durationCell.textContent = log.duration;
+        });
+
+        // Format a time string in 12-hour format
+        function formatTime(timeString) {
+            const [hours, minutes, seconds] = timeString.split(':');
+            const hour = parseInt(hours, 10);
+            const period = hour < 12 ? 'AM' : 'PM';
+            const formattedHours = hour % 12 || 12;
+            return `${formattedHours}:${minutes}:${seconds} ${period}`;
+        }
+
+        // Calculate the time duration between two time strings
+        function calculateTimeDuration(start, end) {
+            const startDate = new Date(0, 0, 0, ...start.split(':'));
+            const endDate = new Date(0, 0, 0, ...end.split(':'));
+            const timeDiff = endDate - startDate;
+            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+            return `${hours} hours, ${minutes} minutes, and ${seconds} seconds`;
+        }
+
+        // Handle button click to start the task
+        function startTask() {
+            if (!taskStartTime || isTaskPaused) {
+                taskStartTime = getCurrentTime();
+                isTaskPaused = false;
+                updateLocalStorage();
+
+                // Display running time
+                runningTimeInterval = setInterval(displayRunningTime, 1000);
+            }
+        }
+
+        // Handle button click to pause the task
+        function pauseTask() {
+            if (taskStartTime && !isTaskPaused) {
+                taskPausedTime = getCurrentTime();
+                isTaskPaused = true;
+                updateLocalStorage();
+
+                // Stop updating running time
+                clearInterval(runningTimeInterval);
+
+                // Display paused time
+                displayPausedTime();
+            }
+        }
+
+        // Handle button click to complete the task
+        function completeTask() {
+            if (taskStartTime && !isTaskPaused) {
+                const taskEndTime = getCurrentTime();
+                const duration = calculateTimeDuration(taskStartTime, taskEndTime);
+                const log = {start: taskStartTime, end: taskEndTime, duration: duration};
+                timeLogs.push(log);
+                updateLocalStorage();
+
+                // Display the completed task in the table
+                const row = timeLogsTable.insertRow();
+                const startCell = row.insertCell();
+                const endCell = row.insertCell();
+                const durationCell = row.insertCell();
+                startCell.textContent = formatTime(log.start);
+                endCell.textContent = formatTime(log.end);
+                durationCell.textContent = log.duration;
+
+                // Reset task variables
+                taskStartTime = null;
+                taskPausedTime = null;
+                isTaskPaused = false;
+                updateLocalStorage();
+
+                // Stop updating running time
+                clearInterval(runningTimeInterval);
+
+                // Display total calculation
+                displayTotalCalculation();
+            }
+        }
+
+        // Get the current time in HH:mm:ss format
+        function getCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Update localStorage with current task state
+        function updateLocalStorage() {
+            localStorage.setItem('timeLogs', JSON.stringify(timeLogs));
+            localStorage.setItem('taskStartTime', taskStartTime);
+            localStorage.setItem('taskPausedTime', taskPausedTime);
+            localStorage.setItem('isTaskPaused', isTaskPaused);
+        }
+
+        // Load task state from localStorage on page load
+        window.onload = function () {
+            taskStartTime = localStorage.getItem('taskStartTime');
+            taskPausedTime = localStorage.getItem('taskPausedTime');
+            isTaskPaused = localStorage.getItem('isTaskPaused') === 'true';
+
+            // Resume task if it was ongoing
+            if (taskStartTime && !isTaskPaused) {
+                startTask();
+            }
+
+            // Display running time
+            if (taskStartTime && !isTaskPaused) {
+                runningTimeInterval = setInterval(displayRunningTime, 1000);
+            }
+
+            // Display paused time
+            if (taskStartTime && isTaskPaused) {
+                displayPausedTime();
+            }
+
+            // Display total calculation
+            if (timeLogs.length > 0) {
+                displayTotalCalculation();
+            }
+        };
+
+        // Display running time
+        function displayRunningTime() {
+            const currentTime = getCurrentTime();
+            document.getElementById('runningTime').textContent = `Running Time: ${currentTime}`;
+        }
+
+        // Display paused time
+        function displayPausedTime() {
+            document.getElementById('pausedTime').textContent = `Paused Time: ${taskPausedTime}`;
+        }
+
+        // Display total calculation
+        function displayTotalCalculation() {
+            let totalHours = 0;
+            let totalMinutes = 0;
+            let totalSeconds = 0;
+
+            timeLogs.forEach(log => {
+                const [hours, minutes, seconds] = log.duration.match(/\d+/g).map(Number);
+                totalHours += hours;
+                totalMinutes += minutes;
+                totalSeconds += seconds;
+            });
+
+            totalMinutes += Math.floor(totalSeconds / 60);
+            totalSeconds %= 60;
+            totalHours += Math.floor(totalMinutes / 60);
+            totalMinutes %= 60;
+
+            document.getElementById('totalCalculation').textContent =
+                `Total Time Spent on Task: ${totalHours} hours, ${totalMinutes} minutes, and ${totalSeconds} seconds`;
+        }
+    </script>
+</body>
+
+</html>
