@@ -1,0 +1,23 @@
+ul {
+    display: flex;
+}
+
+
+.main li {
+    margin-top: 0;
+
+    margin-left: 25px;
+    list-style: none;
+    background: linear-gradient(rgb(197, 187, 187), rgb(153, 185, 153));
+    border-radius: 3px;
+}
+
+.main li a {
+    text-decoration: none;
+
+}
+
+.heading h1 {
+    margin: 0;
+
+}
