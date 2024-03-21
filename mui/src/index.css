@@ -1,3 +1,10 @@
 body {
   background-color: rgb(150, 144, 144);
+  text-align: center;
+
+}
+
+.container {
+  margin: 2px;
+  padding: 10px;
 }

@@ -1,8 +1,10 @@
-import Test from './components/Test'
+import Button1 from './components/Button1'
+import CButton from './components/CButton'
 const App = () => {
   return (
     <>
-    <Test/>
+    {/* <Button1/> */}
+    <CButton/>
     </>
   )
 }
